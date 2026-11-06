@@ -38,12 +38,12 @@ const iconStyle = 'float-left rounded-lg hover:opacity-70 text-white w-8 h-8 tex
 <template>
 
     <div class="space-x-2">
-      <div @click="downloadFile(props.processing_path.res_csv_file, 'res_decoded_dmtx.csv')"
+      <div v-if="props.processing_path.res_csv_file" @click="downloadFile(props.processing_path.res_csv_file, 'res_decoded_dmtx.csv')"
         class="bg-green-300" :class="iconStyle" title="res_decoded_dmtx.csv">
         <!-- <i class="pi pi-file-excel" style="font-size: 1.3rem"></i> -->
          csv
       </div>
-      <div @click="downloadFile(props.processing_path.report_file, 'bot_report.txt')"
+      <div v-if="props.processing_path.report_file" @click="downloadFile(props.processing_path.report_file, 'bot_report.txt')"
         class="bg-violet-300" :class="iconStyle" title="bot_report.txt">
         <!-- <i class="pi pi-file-check" style="font-size: 1.3rem"></i> -->
          txt
