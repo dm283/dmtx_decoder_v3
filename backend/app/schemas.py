@@ -17,6 +17,31 @@ class FileData(BaseModel):
 
 
 
+class UserBase(BaseModel):
+    login: str
+    email: str | None = None
+    company: str | None = None
+    role_id: int
+
+class UserCreate(UserBase):
+    password: str | None = None
+
+class UserUpdate(UserBase):
+    updated_datetime: datetime
+
+class User(UserBase):
+    id: int
+    is_active: bool
+    uuid: str
+    created_datetime: datetime
+    updated_datetime: datetime | None
+
+    class Config:
+        from_attributes = True
+
+
+
+
 #######################
 class CarpassCreate(BaseModel):
     ncar: str
@@ -283,43 +308,7 @@ class Role(BaseModel):
     role_type: str
 
 ################
-class UserBase(BaseModel):
-    login: str
-    email: str | None = None
-    contact_id: int  # deprecated
-    contact_uuid: str | None = None
-    type: str
-    role_id: int
-    comment: str | None = None
 
-class UserCreate(UserBase):
-    password: str | None = None
-
-class UserValidation(BaseModel):
-    login: str
-    email: str | None = None
-    contact_id: int   # deprecated
-    contact_uuid: str | None = None
-    type: str 
-    role_id: int
-
-class UserUpdate(UserBase):
-    updated_datetime: datetime
-
-class User(UserBase):
-    id: int
-    is_active: bool
-    # items: list[Item] = []
-    uuid: str
-    created_datetime: datetime
-    updated_datetime: datetime | None
-    post_date: datetime | None
-    post_user_id: str | None
-    posted: bool
-    was_posted: bool
-
-    class Config:
-        from_attributes = True
 
 class UserJoined(User):
     contact_name: str | None
