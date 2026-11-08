@@ -237,7 +237,7 @@ def income_elems_per_page_cnt_check(caption):
     return 'ok', dmtx_cnt_per_page
 
 
-def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_cnt_per_page: int):
+def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_cnt_per_page: int, user_uuid: str):
     #
     try:
         timeout_dmtx_decode = timeout_count(dmtx_cnt_per_page)
@@ -270,12 +270,12 @@ def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_
             'report_file': report_file if os.path.exists(report_file) else None,
             'undecoded_pages': f'{undecoded_pages_folder}/undecoded_pages.zip' if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip') else None
         }
-        msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path}
+        msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path, 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
 
     except Exception as ex:
         print('ошибка', ex)
-        msg_date = {'message': 'error', 'uuid': file_uuid, 'error_text': str(ex)}
+        msg_date = {'message': 'error', 'uuid': file_uuid, 'error_text': str(ex), 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
 
 

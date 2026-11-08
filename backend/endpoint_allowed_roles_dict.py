@@ -12,6 +12,7 @@ endpoint_allowed_roles_dict = {
 
     # users
     'get'+'users': [1,],
+    'get'+'user': [1,0],
     # user card
     'post'+'users': [1,],
     'put'+'users': [1,],

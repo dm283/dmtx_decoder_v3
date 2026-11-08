@@ -6,6 +6,7 @@ from fastapi import UploadFile
 
 class IncomeDocReceived(BaseModel):
     max_cnt_elems: int = Field(default=..., ge=1)
+    user_uuid: str
 
 class IncomeDoc(IncomeDocReceived):
     filename: str

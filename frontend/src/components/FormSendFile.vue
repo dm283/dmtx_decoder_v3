@@ -4,12 +4,19 @@ import {ref, reactive, computed, onMounted} from 'vue';
 import axios from 'axios';
 import FileAttrs from '@/components/FileAttrs.vue'
 
+const userAccessToken = () => {
+  let user = JSON.parse(localStorage.getItem('user')); if (user && user.access_token) {return user.access_token} else {return ''}
+}
 
 const emit = defineEmits(['clearMsgFile', 'closeModal', 'msgSent'])
 
 const props = defineProps({
   file_for_send: {
     type: File,
+    required: true
+  },
+  user_uuid: {
+    type: String,
     required: true
   }
 });
@@ -21,9 +28,10 @@ const sendFile = async () => {
   let formData = new FormData();
   formData.append('file', props.file_for_send);
   formData.append('max_cnt_elems', max_cnt_elems.value);
+  formData.append('user_uuid', props.user_uuid);
   try {
     const response = await axios.post(`http://localhost:8000/upload_file/`, 
-      formData, {headers: {'Content-Type': 'multipart/form-data'}});
+      formData, {headers: {'Content-Type': 'multipart/form-data', Authorization: 'Bearer '+userAccessToken()}});
 
     emit('msgSent', response.data)
     emit('closeModal')

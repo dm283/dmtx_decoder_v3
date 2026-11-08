@@ -1,7 +1,7 @@
 import json
 from websockets.sync.client import connect
 
-uri = "ws://localhost:8000/ws/12"  
+uri = "ws://localhost:8000/ws/backend"
 
 def send_websocket_msg(msg_date):
     #

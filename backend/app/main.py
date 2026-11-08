@@ -52,10 +52,12 @@ def read_root():
 @app.post("/upload_file/")
 async def upload_file(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
     data: Annotated[schemas.IncomeDocReceived, Form()], file: UploadFile, background_tasks: BackgroundTasks):    
-    income_doc = schemas.IncomeDoc(filename = file.filename, filecontent = file.file.read(), max_cnt_elems = data.max_cnt_elems)
+    income_doc = schemas.IncomeDoc(filename = file.filename, filecontent = file.file.read(), 
+                                   max_cnt_elems = data.max_cnt_elems, user_uuid=data.user_uuid)
     file_uuid = str(uuid4())
     background_tasks.add_task(run_reco_script, file_uuid=file_uuid,
-            filename=income_doc.filename, income_pdf_file=income_doc.filecontent, dmtx_cnt_per_page=income_doc.max_cnt_elems)
+            filename=income_doc.filename, income_pdf_file=income_doc.filecontent, 
+            dmtx_cnt_per_page=income_doc.max_cnt_elems, user_uuid=income_doc.user_uuid)
     return {'file_data': {'file': file, 'max_cnt_elems': data.max_cnt_elems, 
                           'sent_dt': datetime.now().time().strftime('%H:%M:%S'), 'status': 'в обработке'},
             'uuid': file_uuid}
@@ -110,13 +112,13 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             
             # send message to frontend
             if data['message'] == 'recognition done':
-                receiver = '10'
+                receiver = data['user_uuid']
                 msg_text = {"message": "recognition done", "finish_time": datetime.now().time().strftime('%H:%M:%S'), "uuid": data['uuid'], "processing_path": data['processing_path']}
                 msg_text = json.dumps(msg_text)
                 await manager.send_personal_message(msg_text, manager.active_connections_mapping[receiver])
 
             elif data['message'] == 'error':
-                receiver = '10'
+                receiver = data['user_uuid']
                 msg_text = {"message": "error", "finish_time": datetime.now().time().strftime('%H:%M:%S'), "uuid": data['uuid']}
                 msg_text = json.dumps(msg_text)
                 await manager.send_personal_message(msg_text, manager.active_connections_mapping[receiver])               
@@ -169,3 +171,13 @@ def create_user(current_user: Annotated[UserAuth, Depends(get_current_active_use
     return crud.create_user(db=db, user=data_none_values_redefined, 
                             user_uuid=current_user.uuid
                             )
+
+
+@app.get('/user/', response_model=schemas.User)
+def read_user(current_user: Annotated[UserAuth, Depends(get_current_active_user)], db: Session = Depends(get_db)):
+    #
+    check_endpoint_role_access(url='user', type='get', current_role_id=current_user.role_id)
+    item = crud.get_user_by_uuid(db, uuid=current_user.uuid)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return item

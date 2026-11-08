@@ -1,15 +1,32 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import axios from 'axios';
 import 'primeicons/primeicons.css';
 import FormSendFile from './components/FormSendFile.vue'
 import FileAttrs from './components/FileAttrs.vue'
 import ResultDownloadSection from './components/ResultDownloadSection.vue'
 import FormErrMsg from './components/FormErrMsg.vue'
+import AuthForm from './components/AuthForm.vue'
 
 
+const isAuthorized = ref(false)
+const showFromSendFile = ref(false);
+const showErrMsg = ref(false);
+const errMessageText = ref('');
+const file = ref('')
+const fileForSend = ref('')
+const sentFilesList = ref([])
+const userInfo = ref()
 
-const ws = new WebSocket(`ws://localhost:8000/ws/10`);
+const getUserInfo = () => {
+  userInfo.value = JSON.parse(localStorage.getItem('userInfo'));
+  console.log('userinfp =', userInfo.value)
+}
+
+const initWS = () => {
+console.log('auth ok - open websock')
+const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
+// const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
 ws.onmessage = function(event) {
   // const message = event.data  // 
   const message = JSON.parse(event.data);
@@ -28,13 +45,7 @@ ws.onmessage = function(event) {
         sentFilesList.value[sf].file_data.finish_time = message.finish_time
       } } }    
 };
-
-const showFromSendFile = ref(false);
-const showErrMsg = ref(false);
-const errMessageText = ref('');
-const file = ref('')
-const fileForSend = ref('')
-const sentFilesList = ref([])
+}
 
 const openSendForm = () => {
   if (fileForSend.value.type != 'application/pdf') { 
@@ -64,16 +75,32 @@ const setStatusStyle = (status) => {
 }
 
 
+const signOut = async () => {
+  //
+  localStorage.removeItem('user');
+  isAuthorized.value = false;
+  // await getData();
+};
+
 </script>
 
 <template>
-  <header class="flex h-10 py-1.5 pl-10 bg-blue-500 text-white bg-gradient-to-r from-blue-500 to-sky-500">
+
+  <div v-if="!isAuthorized" class="">
+    <AuthForm @auth-ok="isAuthorized=true; getUserInfo(); initWS()"/>
+  </div>
+
+
+  <div v-if="isAuthorized">
+  <header class="h-10 py-1.5 px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
+    <div class="float-right mx-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
+      <i class="pi pi-sign-out" style="font-size: 1.3rem" @click="signOut()"></i></div>
   </header>
  
   <section class="flex mx-auto w-fit mt-20 p-1.5">
     <div class="mr-2">
-      <label for="msg_add_file" class="cursor-pointer hover:text-slate-500"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
+      <label for="msg_add_file" class="cursor-pointer hover:text-slate-500" title="attach file"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
       <input class="hidden" type="file" ref="file" id="msg_add_file" name="msg_add_file" 
         @change="fileForSend=file.files[0]; openSendForm()">
     </div>
@@ -84,7 +111,7 @@ const setStatusStyle = (status) => {
 
   <div v-if="showFromSendFile" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
     <FormSendFile @close-modal="showFromSendFile=false" @clear-msg-file="file.value=''" @msg-sent="sentFilesListAdd" 
-      :file_for_send="fileForSend" />
+      :file_for_send="fileForSend" :user_uuid="userInfo.uuid" />
   </div>
 
   <div v-if="showErrMsg" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
@@ -101,7 +128,7 @@ const setStatusStyle = (status) => {
     </div>
 
   </section>
-
+  </div>
 </template>
 
 <style scoped>
