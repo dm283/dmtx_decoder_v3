@@ -1,23 +1,12 @@
 import os, sys, shutil, random, configparser, logging, time, zipfile
+import cv2, datetime, os, sys, csv
 from pikepdf import Pdf
 from pdf2image import convert_from_path
-import pylibdmtx.pylibdmtx as dmtx_lib, cv2, datetime, os, sys, csv
+import pylibdmtx.pylibdmtx as dmtx_lib
 from pathlib import Path
+
 from .websock_functions import send_websocket_msg
-
-# config = configparser.ConfigParser()
-# config_file = os.path.join(Path(__file__).resolve().parent, 'config.ini')
-# if os.path.exists(config_file):
-#   config.read(config_file, encoding='utf-8')
-# else:
-#   print("error! config file doesn't exist"); sys.exit()
-
-
-# logging.basicConfig(
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     level=logging.INFO
-# )
-
+from app import crud, schemas, common_functions
 
 
 PROCESSINGS_COMMON_FOLDER = 'Processings'
@@ -237,7 +226,7 @@ def income_elems_per_page_cnt_check(caption):
     return 'ok', dmtx_cnt_per_page
 
 
-def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_cnt_per_page: int):
+def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_cnt_per_page: int, user_uuid: str, start_time, db):
     #
     try:
         timeout_dmtx_decode = timeout_count(dmtx_cnt_per_page)
@@ -252,6 +241,21 @@ def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_
         with open(source_pdf_file, "wb") as f:
             f.write(income_pdf_file)
 
+
+        # save task data into database
+        data = schemas.TaskCreate(
+            uuid = file_uuid,
+            filename = filename,
+            max_cnt_elems = dmtx_cnt_per_page,
+            user_uuid = user_uuid,
+            status = 'в обработке',
+            processing_path = processing_folder,
+            start_time = start_time
+        )
+        data_none_values_redefined = common_functions.redefine_schema_values_to_none(data, schemas.TaskCreate)
+        crud.create_task(item=data_none_values_redefined, db=db)
+
+
         message_text = 'принято. ожидайте ответа'
         print(message_text)
 
@@ -265,18 +269,31 @@ def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_
 
         print('reco done. sending message to websocket')
 
+        # zero elements have recognized (including pdf file has no any datamatrix)
+        if not general_decode_list:
+            msg_date = {'message': 'zero', 'uuid': file_uuid, 'user_uuid': user_uuid}
+            send_websocket_msg(msg_date=msg_date)
+            item = schemas.TaskUpdate(status='zero', finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+            crud.update_task(item_uuid=file_uuid, item=item, db=db)
+            return
+
+        # successful case
         processing_path = {
             'res_csv_file': res_csv_file if (os.path.exists(res_csv_file) and general_decode_list) else None,
             'report_file': report_file if os.path.exists(report_file) else None,
             'undecoded_pages': f'{undecoded_pages_folder}/undecoded_pages.zip' if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip') else None
         }
-        msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path}
+        msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path, 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
+        item = schemas.TaskUpdate(status='done', finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+        crud.update_task(item_uuid=file_uuid, item=item, db=db)
 
     except Exception as ex:
         print('ошибка', ex)
-        msg_date = {'message': 'error', 'uuid': file_uuid, 'error_text': str(ex)}
+        msg_date = {'message': 'error', 'uuid': file_uuid, 'error_text': str(ex), 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
+        item = schemas.TaskUpdate(status='error', error_text=str(ex), finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+        crud.update_task(item_uuid=file_uuid, item=item, db=db)
 
 
     # # sends outcome file via toelegram bot to customer

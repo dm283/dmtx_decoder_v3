@@ -1,6 +1,10 @@
 <script setup>
 import axios from 'axios';
 
+const authHeader = () => {
+  let user = JSON.parse(localStorage.getItem('user')); 
+  if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
+}
 
 const props = defineProps({
   processing_path: {
@@ -17,7 +21,7 @@ async function downloadFile(path, file_name) {
   formData.append('file_name', file_name);
 
   let query = `http://localhost:8000/download_file/`
-  const response = await axios.post(query, formData, {responseType: "blob"});
+  const response = await axios.post(query, formData, {responseType: "blob", headers: authHeader()});
   const filename = decodeURI(response.headers["file-name"])
 
   var url = window.URL.createObjectURL(new Blob([response.data]));
