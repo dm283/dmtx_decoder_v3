@@ -13,15 +13,6 @@ const login = ref('');
 const password = ref('');
 const authFormMessage = ref('')
 
-// const props = defineProps({
-//   file_for_send: {
-//     type: File,
-//     required: true
-//   }
-// });
-
-
-
 // custom directive for input autofocus
 const vFocus = { mounted: (el) => { el.focus() } }
 
@@ -31,8 +22,7 @@ const formInputStyle = 'border-b-2 border-blue-300 text-base w-full py-1 px-1 mb
 const setUserInfo = async () => {
   //
   const response = await axios.get(`http://localhost:8000/user`, {headers: authHeader()})
-  //state.userInfo = response.data  //
-  console.log('get user =', response.data)
+  // console.log('get user =', response.data)
   localStorage.setItem('userInfo', JSON.stringify(response.data));
 }
 
@@ -50,12 +40,21 @@ const authSubmit = async () => {
     if (response.data.access_token) {
       localStorage.setItem('user', JSON.stringify(response.data));
       emit('authOk')
-      // isAuthorized.value = true;
-      // state.isLoading = true;
       await setUserInfo();
     }
   } catch (error) {
-    authFormMessage.value = 'Некорректный логин или пароль.'
+    if (error.response) {
+      console.log('error status code =', error.response.data.detail)
+      if (error.response.status == 401 && error.response.data.detail == 'Incorrect username or password') {
+        authFormMessage.value = 'Некорректный логин или пароль.' }
+      else if (error.response.status == 403 && error.response.data.detail == 'Username already loged in') {
+        authFormMessage.value = `${login.value} залогинен на другом компьютере` }
+      else { 
+        authFormMessage.value = 'Ошибка авторизации.'
+      }
+      
+    }
+    
     // isAuthorized.value = false;
   };
 }

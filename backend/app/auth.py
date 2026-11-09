@@ -107,6 +107,8 @@ async def get_current_active_user(current_user: Annotated[UserAuth, Depends(get_
     return current_user
 
 
+loged_users_list = []
+
 @router.post("/token")
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
                                  db: Session=Depends(get_db)) -> Token:
@@ -117,6 +119,17 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    #
+    # if form_data.username in loged_users_list:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Username already loged in",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
+    
+    loged_users_list.append(form_data.username)
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.login}, expires_delta=access_token_expires

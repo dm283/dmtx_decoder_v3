@@ -19,14 +19,23 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
 
-# class Message(Base):
-#     __tablename__ = 'messages'
-#     sender = Column(String)  # username
-#     receiver = Column(String)  # username
-#     msg_text = Column(String)
-#     data = Column(String)   # json
-#     status = Column(String)
-    
-#     id = Column(Integer, primary_key=True)
-#     uuid = Column(String, unique=True)
-#     created_datetime = Column(DateTime)
+class Task(Base):
+    __tablename__ = 'tasks'
+
+    uuid = Column(String, unique=True)
+    filename = Column(String)
+    max_cnt_elems = Column(Integer)
+    user_uuid = Column(String)
+    status = Column(String)
+    processing_path = Column(String, nullable=True, default=None)
+    error_text = Column(String, nullable=True, default=None)
+    start_time = Column(Time)
+    finish_time = Column(Time, nullable=True, default=None)
+
+    # source_pdf_file
+    # res_csv_file
+    # report_file
+    # undecoded_pages_zip
+
+    id = Column(Integer, primary_key=True)
+    created_datetime = Column(DateTime)

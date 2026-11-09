@@ -17,7 +17,32 @@ class FileData(BaseModel):
     file_name: str
 
 
+###############
+class TaskCreate(BaseModel):
+    uuid: str
+    filename: str
+    max_cnt_elems: int = Field(default=..., ge=1)
+    user_uuid: str
+    status: str
+    processing_path: str
+    # error_text: str | None = None
+    start_time: time
+    # finish_time: time | None = None
 
+class TaskUpdate(BaseModel):
+    status: str
+    error_text: str | None = None
+    finish_time: time
+
+class Task(TaskCreate):
+    id: int
+    created_datetime: datetime
+
+    class Config:
+        from_attributes = True
+
+
+####################
 class UserBase(BaseModel):
     login: str
     email: str | None = None

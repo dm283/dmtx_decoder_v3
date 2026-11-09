@@ -24,27 +24,33 @@ const getUserInfo = () => {
 }
 
 const initWS = () => {
-console.log('auth ok - open websock')
-const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
-// const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
-ws.onmessage = function(event) {
-  // const message = event.data  // 
-  const message = JSON.parse(event.data);
-  // messages.value.push(message);
-  if (message.message=='recognition done') {
-    for (let sf in sentFilesList.value) {
-      if (sentFilesList.value[sf].uuid==message.uuid) {
-        sentFilesList.value[sf].file_data.status = 'done'
-        sentFilesList.value[sf].file_data.finish_time = message.finish_time
-        sentFilesList.value[sf].file_data.processing_path = message.processing_path
-      } } }
-  else if (message.message=='error') {
-    for (let sf in sentFilesList.value) {
-      if (sentFilesList.value[sf].uuid==message.uuid) {
-        sentFilesList.value[sf].file_data.status = 'ошибка'
-        sentFilesList.value[sf].file_data.finish_time = message.finish_time
-      } } }    
-};
+  // console.log('auth ok - open websock')
+  const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
+  // const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
+  ws.onmessage = function(event) {
+    // const message = event.data  // 
+    const message = JSON.parse(event.data);
+    // messages.value.push(message);
+    if (message.message=='recognition done') {
+      for (let sf in sentFilesList.value) {
+        if (sentFilesList.value[sf].uuid==message.uuid) {
+          sentFilesList.value[sf].file_data.status = 'done'
+          sentFilesList.value[sf].file_data.finish_time = message.finish_time
+          sentFilesList.value[sf].file_data.processing_path = message.processing_path
+        } } }
+    else if (message.message=='error') {
+      for (let sf in sentFilesList.value) {
+        if (sentFilesList.value[sf].uuid==message.uuid) {
+          sentFilesList.value[sf].file_data.status = 'ошибка'
+          sentFilesList.value[sf].file_data.finish_time = message.finish_time
+        } } }
+    else if (message.message=='zero') {
+      for (let sf in sentFilesList.value) {
+        if (sentFilesList.value[sf].uuid==message.uuid) {
+          sentFilesList.value[sf].file_data.status = 'не распознано'
+          sentFilesList.value[sf].file_data.finish_time = message.finish_time
+        } } }    
+  };
 }
 
 const openSendForm = () => {
@@ -72,6 +78,7 @@ const sentFilesListAdd = async (sentFile) => {
 const setStatusStyle = (status) => {
   if (status == 'в обработке') { return 'mt-3 ml-18 text-blue-500' }
   else if (status == 'ошибка') { return 'mt-3 ml-18 text-red-500' }
+  else if (status == 'не распознано') { return 'mt-3 ml-18 text-rose-500' }
 }
 
 
@@ -79,6 +86,7 @@ const signOut = async () => {
   //
   localStorage.removeItem('user');
   isAuthorized.value = false;
+  sentFilesList.value.length = 0;
   // await getData();
 };
 
@@ -94,8 +102,9 @@ const signOut = async () => {
   <div v-if="isAuthorized">
   <header class="h-10 py-1.5 px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
-    <div class="float-right mx-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
-      <i class="pi pi-sign-out" style="font-size: 1.3rem" @click="signOut()"></i></div>
+      <div class="float-right mx-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
+        <i class="pi pi-sign-out" style="font-size: 1.3rem" @click="signOut()"></i></div>
+      <div class="float-right mt-0.5 mr-5 text-base">{{ userInfo.login }}</div>
   </header>
  
   <section class="flex mx-auto w-fit mt-20 p-1.5">

@@ -10,6 +10,31 @@ from app import models, schemas
 
 
 
+def create_task(item: schemas.TaskCreate, db: Session):
+    #
+    db_item = models.Task(**item.model_dump(), created_datetime=datetime.datetime.now())
+    try:
+        db.add(db_item); db.commit(); db.refresh(db_item)
+    except Exception as err:
+        print(err)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    
+    # logging_action(obj_type='batch', schema=schemas.Batch, action='create', item_from_db=db_item, user_uuid=user_uuid, db=db)
+
+    return db_item
+
+
+def update_task(item_uuid: str, item: schemas.TaskUpdate, db: Session, ):
+    #
+    item_from_db = db.query(models.Task).filter(models.Task.uuid == item_uuid).first()
+    if item_from_db is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    for field, value in item.model_dump(exclude_unset=True).items():
+        setattr(item_from_db, field, value)
+    db.commit()
+    # logging_action(obj_type='batch', schema=schemas.Batch, action='update', item_from_db=item_from_db, user_uuid=user_uuid, db=db)
+    return item_from_db
+
 
 def create_user(db: Session, user: schemas.UserCreate, user_uuid: str):
     # creates user in database
@@ -1307,20 +1332,7 @@ def create_related_contact_broker(db: Session, data: schemas.RelatedContactBroke
     return record
 
 #########################################################    UPDATE FUNCTIONS
-def update_item(item, model, schema, obj_type, db: Session, item_uuid: str, user_uuid: str):
-    # generic update item function
-    # item: schemas.CarpassUpdate for example
 
-    item_from_db =  db.query(model).filter(model.uuid == item_uuid).first()
-    if item_from_db is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    
-    for field, value in item.model_dump(exclude_unset=True).items():
-        setattr(item_from_db, field, value)
-    db.commit()
-
-    logging_action(obj_type=obj_type, schema=schema, action='update', item_from_db=item_from_db, user_uuid=user_uuid, db=db)
-    return item_from_db
 
 
 
