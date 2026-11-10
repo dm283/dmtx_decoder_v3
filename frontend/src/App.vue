@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import 'primeicons/primeicons.css';
 import FormSendFile from './components/FormSendFile.vue'
@@ -9,7 +9,7 @@ import FormErrMsg from './components/FormErrMsg.vue'
 import AuthForm from './components/AuthForm.vue'
 
 const authHeader = () => {
-  let user = JSON.parse(localStorage.getItem('user')); 
+  let user = JSON.parse(localStorage.getItem('userInfo')); 
   if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
 }
 
@@ -23,14 +23,49 @@ const fileForSend = ref('')
 const sentFilesList = ref([])
 const userInfo = ref()
 
-const getUserInfo = () => {
-  userInfo.value = JSON.parse(localStorage.getItem('userInfo'));
-  console.log('userinfp =', userInfo.value)
+
+const initApp = async () => {
+  //
+  console.log('init app')
+  getUserInfo();
+  console.log('getuserinfo done', userInfo.value)
+  if (!userInfo.value) { return }
+  getUserTasks();
+  console.log('getusertasks done', sentFilesList.value)
+  initWS(userInfo.value.uuid);
+  console.log('initws done')
+  isAuthorized.value = true;
 }
 
-const initWS = () => {
+
+const getUserInfo = async () => {
+  userInfo.value = JSON.parse(localStorage.getItem('userInfo'));
+}
+
+
+const getUserTasks = async () => {
+  //
+  try {     
+    const response = await axios.get(`http://localhost:8000/user_tasks`, {headers: authHeader()});
+    console.log('loaded tasks =', response.data)
+    sentFilesList.value = response.data;
+    console.log('sentFilesList =', sentFilesList.value[0])
+  } catch (error) {
+    // unauthorized response (obsolete token)
+    if (error.status == 401) { 
+      console.error('unauthorized'); 
+      // toast.warning('Авторизуйтесь заново, токен устарел!') 
+    }
+    console.error('Error fetching', error);
+  } 
+}
+
+
+const initWS = ( user_uuid ) => {
   // console.log('auth ok - open websock')
-  const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
+  console.log('inside initws =', user_uuid)
+  // const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
+  const ws = new WebSocket(`ws://localhost:8000/ws/${user_uuid}`);
   // const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
   ws.onmessage = function(event) {
     // const message = event.data  // 
@@ -58,19 +93,20 @@ const initWS = () => {
   };
 }
 
-const openSendForm = () => {
-  if (fileForSend.value.type != 'application/pdf') { 
-    errMessageText.value = 'Не pdf файл.'; showErrMsg.value = true; return 
-  }
-  showFromSendFile.value = true
-}
-
 
 const pasteFile = async (event) => {
   const data = event.clipboardData;
   fileForSend.value = data && data.files && data.files[0];
   event.target.blur();
   openSendForm()
+}
+
+
+const openSendForm = () => {
+  if (fileForSend.value.type != 'application/pdf') { 
+    errMessageText.value = 'Не pdf файл.'; showErrMsg.value = true; return 
+  }
+  showFromSendFile.value = true
 }
 
 
@@ -87,47 +123,31 @@ const setStatusStyle = (status) => {
 }
 
 
-const signOut = async () => {
-  //
-  localStorage.removeItem('user');
-  isAuthorized.value = false;
-  sentFilesList.value.length = 0;
-  // await getData();
-};
-
-
-const getUserTasks = async () => {
-  //
-  // state.isLoading = true;
-  try {     
-    const response = await axios.get(`http://localhost:8000/user_tasks`, {headers: authHeader()});
-    console.log('loaded tasks =', response.data)
-    sentFilesList.value = response.data;
-    console.log('sentFilesList =', sentFilesList.value[0])
-  } catch (error) {
-    // unauthorized response (obsolete token)
-    if (error.status == 401) { 
-      console.error('unauthorized'); 
-      // toast.warning('Авторизуйтесь заново, токен устарел!') 
-    }
-    console.error('Error fetching', error);
-  } 
-  // finally { state.isLoading = false; }
-}
-
-
 const processing_path_to_obj = (processing_path) => {
   //
   if (typeof processing_path == 'string') { return JSON.parse(processing_path) }
   return processing_path
 }
 
+
+const signOut = async () => {
+  //
+  localStorage.removeItem('userInfo');
+  isAuthorized.value = false;
+  sentFilesList.value.length = 0;
+};
+
+
+onMounted( () => {
+  initApp()
+});
+
 </script>
 
 <template>
 
   <div v-if="!isAuthorized" class="">
-    <AuthForm @auth-ok="isAuthorized=true; getUserInfo(); initWS(); getUserTasks()"/>
+    <AuthForm @auth-ok="initApp()"/>
   </div>
 
 
@@ -139,8 +159,6 @@ const processing_path_to_obj = (processing_path) => {
         <i class="pi pi-sign-out" style="font-size: 1.3rem" @click="signOut()"></i></div>
       <div class="float-right mt-0.5 mr-5 text-base">{{ userInfo.login }}</div>
   </header>
- 
-  <!-- <button class="border" @click="getUserTasks()">getdata</button> -->
 
   <section class="flex mx-auto w-fit mt-20 p-1.5">
     <div class="mr-2">

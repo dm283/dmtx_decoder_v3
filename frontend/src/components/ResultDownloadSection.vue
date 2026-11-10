@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const authHeader = () => {
-  let user = JSON.parse(localStorage.getItem('user')); 
+  let user = JSON.parse(localStorage.getItem('userInfo')); 
   if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
 }
 
