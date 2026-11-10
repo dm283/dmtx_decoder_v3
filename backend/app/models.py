@@ -24,6 +24,7 @@ class Task(Base):
 
     uuid = Column(String, unique=True)
     filename = Column(String)
+    size = Column(Integer)
     max_cnt_elems = Column(Integer)
     user_uuid = Column(String)
     status = Column(String)

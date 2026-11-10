@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
 import 'primeicons/primeicons.css';
 import FormSendFile from './components/FormSendFile.vue'
@@ -7,6 +7,11 @@ import FileAttrs from './components/FileAttrs.vue'
 import ResultDownloadSection from './components/ResultDownloadSection.vue'
 import FormErrMsg from './components/FormErrMsg.vue'
 import AuthForm from './components/AuthForm.vue'
+
+const authHeader = () => {
+  let user = JSON.parse(localStorage.getItem('user')); 
+  if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
+}
 
 
 const isAuthorized = ref(false)
@@ -34,21 +39,21 @@ const initWS = () => {
     if (message.message=='recognition done') {
       for (let sf in sentFilesList.value) {
         if (sentFilesList.value[sf].uuid==message.uuid) {
-          sentFilesList.value[sf].file_data.status = 'done'
-          sentFilesList.value[sf].file_data.finish_time = message.finish_time
-          sentFilesList.value[sf].file_data.processing_path = message.processing_path
+          sentFilesList.value[sf].status = 'готово'
+          sentFilesList.value[sf].finish_time = message.finish_time
+          sentFilesList.value[sf].processing_path = message.processing_path
         } } }
     else if (message.message=='error') {
       for (let sf in sentFilesList.value) {
         if (sentFilesList.value[sf].uuid==message.uuid) {
-          sentFilesList.value[sf].file_data.status = 'ошибка'
-          sentFilesList.value[sf].file_data.finish_time = message.finish_time
+          sentFilesList.value[sf].status = 'ошибка'
+          sentFilesList.value[sf].finish_time = message.finish_time
         } } }
     else if (message.message=='zero') {
       for (let sf in sentFilesList.value) {
         if (sentFilesList.value[sf].uuid==message.uuid) {
-          sentFilesList.value[sf].file_data.status = 'не распознано'
-          sentFilesList.value[sf].file_data.finish_time = message.finish_time
+          sentFilesList.value[sf].status = 'нераспознано'
+          sentFilesList.value[sf].finish_time = message.finish_time
         } } }    
   };
 }
@@ -78,7 +83,7 @@ const sentFilesListAdd = async (sentFile) => {
 const setStatusStyle = (status) => {
   if (status == 'в обработке') { return 'mt-3 ml-18 text-blue-500' }
   else if (status == 'ошибка') { return 'mt-3 ml-18 text-red-500' }
-  else if (status == 'не распознано') { return 'mt-3 ml-18 text-rose-500' }
+  else if (status == 'нераспознано') { return 'mt-3 ml-18 text-yellow-900' }
 }
 
 
@@ -90,16 +95,44 @@ const signOut = async () => {
   // await getData();
 };
 
+
+const getUserTasks = async () => {
+  //
+  // state.isLoading = true;
+  try {     
+    const response = await axios.get(`http://localhost:8000/user_tasks`, {headers: authHeader()});
+    console.log('loaded tasks =', response.data)
+    sentFilesList.value = response.data;
+    console.log('sentFilesList =', sentFilesList.value[0])
+  } catch (error) {
+    // unauthorized response (obsolete token)
+    if (error.status == 401) { 
+      console.error('unauthorized'); 
+      // toast.warning('Авторизуйтесь заново, токен устарел!') 
+    }
+    console.error('Error fetching', error);
+  } 
+  // finally { state.isLoading = false; }
+}
+
+
+const processing_path_to_obj = (processing_path) => {
+  //
+  if (typeof processing_path == 'string') { return JSON.parse(processing_path) }
+  return processing_path
+}
+
 </script>
 
 <template>
 
   <div v-if="!isAuthorized" class="">
-    <AuthForm @auth-ok="isAuthorized=true; getUserInfo(); initWS()"/>
+    <AuthForm @auth-ok="isAuthorized=true; getUserInfo(); initWS(); getUserTasks()"/>
   </div>
 
 
   <div v-if="isAuthorized">
+
   <header class="h-10 py-1.5 px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
       <div class="float-right mx-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
@@ -107,13 +140,15 @@ const signOut = async () => {
       <div class="float-right mt-0.5 mr-5 text-base">{{ userInfo.login }}</div>
   </header>
  
+  <!-- <button class="border" @click="getUserTasks()">getdata</button> -->
+
   <section class="flex mx-auto w-fit mt-20 p-1.5">
     <div class="mr-2">
-      <label for="msg_add_file" class="cursor-pointer hover:text-slate-500" title="attach file"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
+      <label for="msg_add_file" class="cursor-pointer hover:text-slate-500" title="прикрепить файл"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
       <input class="hidden" type="file" ref="file" id="msg_add_file" name="msg_add_file" 
         @change="fileForSend=file.files[0]; openSendForm()">
     </div>
-    <input type="text" id="msg_input_field" name="msg_input_field" placeholder="paste pdf file here..."
+    <input type="text" id="msg_input_field" name="msg_input_field" placeholder="paste pdf file here"
       @paste="pasteFile"
       class="w-80 h-8 px-2 border-2 border-slate-400 rounded-lg" >
   </section>
@@ -129,14 +164,17 @@ const signOut = async () => {
 
   <section v-if="sentFilesList.length>0" class="m-auto mt-5 w-fit space-y-3">
     <div v-for="sfile in sentFilesList" class="w-[528px] h-17 p-2 border border-slate-200 rounded-md">
-      <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="sfile.file_data.file" /></div>
-      <div class=" float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.file_data.sent_dt }}</div>
-      <div class=" float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.file_data.finish_time || '-'}}</div>
-      <div v-if="sfile.file_data.status!='done'" :class=setStatusStyle(sfile.file_data.status)>{{ sfile.file_data.status }}</div>
-      <ResultDownloadSection :processing_path='sfile.file_data.processing_path' v-if="sfile.file_data.status=='done'" class="ml-5" />
+      <!-- <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="sfile.file" /></div> -->
+      <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="{'filename':sfile.filename, 'size':sfile.size}" /></div>
+      <div class=" float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+      <div class=" float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+      <div v-if="sfile.status!='готово'" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
+      <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) v-if="sfile.status=='готово'" class="ml-5" />
+      <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
     </div>
 
   </section>
+
   </div>
 </template>
 
