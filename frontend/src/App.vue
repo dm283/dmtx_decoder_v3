@@ -148,7 +148,7 @@ const processing_path_to_obj = (processing_path) => {
       <input class="hidden" type="file" ref="file" id="msg_add_file" name="msg_add_file" 
         @change="fileForSend=file.files[0]; openSendForm()">
     </div>
-    <input type="text" id="msg_input_field" name="msg_input_field" placeholder="paste pdf file here"
+    <input type="text" id="msg_input_field" name="msg_input_field" placeholder="paste pdf file here..."
       @paste="pasteFile"
       class="w-80 h-8 px-2 border-2 border-slate-400 rounded-lg" >
   </section>
