@@ -69,18 +69,11 @@ async def upload_file(current_user: Annotated[UserAuth, Depends(get_current_acti
     return {'uuid': file_uuid, 'filename': file.filename, 'size': file.size, 'max_cnt_elems': data.max_cnt_elems, 
             'start_time': start_time, 'status': 'в обработке'}
 
-    # return {'uuid': file_uuid, 'file': file, 'max_cnt_elems': data.max_cnt_elems, 'sent_dt': start_time, 'status': 'в обработке'}
-    
-    # return {'file_data': {'file': file, 'max_cnt_elems': data.max_cnt_elems, 
-    #                       'sent_dt': start_time, 'status': 'в обработке'},
-    #         'uuid': file_uuid}
-
-
 
 # download file from server
 @app.post('/download_file/')
-def file_download(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
-    file_data: Annotated[schemas.FileData, Form()]):
+def file_download(current_user: Annotated[UserAuth, Depends(get_current_active_user)], file_data: Annotated[schemas.FileData, Form()]):
+
     filepath = file_data.file_path
     filename = file_data.file_name
     response = FileResponse(path=filepath,
