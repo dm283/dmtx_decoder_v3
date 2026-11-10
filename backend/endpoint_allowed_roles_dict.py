@@ -19,6 +19,9 @@ endpoint_allowed_roles_dict = {
     'get'+'user_by_uuid': [1,],
     # user backend (auth)
 
+    # tasks
+    'get'+'user_tasks': [1,0],
+
     # delete items
     'delete'+'users': [1,],
     'delete'+'batches': ['admin', 'dispatcher'],

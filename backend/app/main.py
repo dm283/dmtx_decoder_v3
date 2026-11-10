@@ -60,13 +60,20 @@ async def upload_file(current_user: Annotated[UserAuth, Depends(get_current_acti
                                    max_cnt_elems = data.max_cnt_elems, user_uuid=data.user_uuid)
     file_uuid = str(uuid4())
     start_time = datetime.now().time().strftime('%H:%M:%S')
+    # filesize = round(int(file.size)/1000, 1)
 
     background_tasks.add_task(run_reco_script, file_uuid=file_uuid,
-            filename=income_doc.filename, income_pdf_file=income_doc.filecontent, 
+            filename=income_doc.filename, filesize=file.size, income_pdf_file=income_doc.filecontent, 
             dmtx_cnt_per_page=income_doc.max_cnt_elems, user_uuid=income_doc.user_uuid, start_time=start_time, db=db)
-    return {'file_data': {'file': file, 'max_cnt_elems': data.max_cnt_elems, 
-                          'sent_dt': start_time, 'status': 'в обработке'},
-            'uuid': file_uuid}
+
+    return {'uuid': file_uuid, 'filename': file.filename, 'size': file.size, 'max_cnt_elems': data.max_cnt_elems, 
+            'start_time': start_time, 'status': 'в обработке'}
+
+    # return {'uuid': file_uuid, 'file': file, 'max_cnt_elems': data.max_cnt_elems, 'sent_dt': start_time, 'status': 'в обработке'}
+    
+    # return {'file_data': {'file': file, 'max_cnt_elems': data.max_cnt_elems, 
+    #                       'sent_dt': start_time, 'status': 'в обработке'},
+    #         'uuid': file_uuid}
 
 
 
@@ -161,7 +168,15 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 #     if current_role_id not in endpoint_allowed_roles_dict[type+url]:
 #         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Отсутствует доступ')
-    
+
+
+@app.get('/user_tasks/', response_model=list[schemas.Task])
+def read_tasks(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
+                   skip: int = 0, limit: int = 5, db: Session = Depends(get_db)):
+    common_functions.check_endpoint_role_access(url='user_tasks', type='get', current_role_id=current_user.role_id)
+    items = crud.get_user_tasks(user_uuid=current_user.uuid, db=db, skip=skip, limit=limit)
+    return items
+
 
 @app.post("/users/", response_model=schemas.User)
 def create_user(current_user: Annotated[UserAuth, Depends(get_current_active_user)],

@@ -1,4 +1,4 @@
-import os, sys, shutil, random, configparser, logging, time, zipfile
+import os, sys, shutil, random, configparser, logging, time, zipfile, json
 import cv2, datetime, os, sys, csv
 from pikepdf import Pdf
 from pdf2image import convert_from_path
@@ -226,7 +226,8 @@ def income_elems_per_page_cnt_check(caption):
     return 'ok', dmtx_cnt_per_page
 
 
-def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_cnt_per_page: int, user_uuid: str, start_time, db):
+def run_reco_script(file_uuid: str, filename: str, filesize: float, income_pdf_file: bytes, 
+                    dmtx_cnt_per_page: int, user_uuid: str, start_time, db):
     #
     try:
         timeout_dmtx_decode = timeout_count(dmtx_cnt_per_page)
@@ -246,6 +247,7 @@ def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_
         data = schemas.TaskCreate(
             uuid = file_uuid,
             filename = filename,
+            size = filesize,
             max_cnt_elems = dmtx_cnt_per_page,
             user_uuid = user_uuid,
             status = 'в обработке',
@@ -273,26 +275,28 @@ def run_reco_script(file_uuid: str, filename: str, income_pdf_file: bytes, dmtx_
         if not general_decode_list:
             msg_date = {'message': 'zero', 'uuid': file_uuid, 'user_uuid': user_uuid}
             send_websocket_msg(msg_date=msg_date)
-            item = schemas.TaskUpdate(status='zero', finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+            item = schemas.TaskUpdate(status='нераспознано', finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
             crud.update_task(item_uuid=file_uuid, item=item, db=db)
             return
 
         # successful case
         processing_path = {
-            'res_csv_file': res_csv_file if (os.path.exists(res_csv_file) and general_decode_list) else None,
-            'report_file': report_file if os.path.exists(report_file) else None,
-            'undecoded_pages': f'{undecoded_pages_folder}/undecoded_pages.zip' if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip') else None
+            "res_csv_file": res_csv_file if (os.path.exists(res_csv_file) and general_decode_list) else None,
+            "report_file": report_file if os.path.exists(report_file) else None,
+            "undecoded_pages": f'{undecoded_pages_folder}/undecoded_pages.zip' if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip') else None
         }
         msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path, 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
-        item = schemas.TaskUpdate(status='done', finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+        
+        item = schemas.TaskUpdate(processing_path=json.dumps(processing_path), status='готово', 
+                                  finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
         crud.update_task(item_uuid=file_uuid, item=item, db=db)
 
     except Exception as ex:
         print('ошибка', ex)
         msg_date = {'message': 'error', 'uuid': file_uuid, 'error_text': str(ex), 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
-        item = schemas.TaskUpdate(status='error', error_text=str(ex), finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
+        item = schemas.TaskUpdate(status='ошибка', error_text=str(ex), finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
         crud.update_task(item_uuid=file_uuid, item=item, db=db)
 
 

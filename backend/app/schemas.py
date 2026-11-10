@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta
 from typing import Annotated
+from enum import Enum
 from pydantic import BaseModel, Field, StringConstraints, EmailStr, AfterValidator
 from fastapi import UploadFile
 
@@ -17,20 +18,29 @@ class FileData(BaseModel):
     file_name: str
 
 
+################
+class Status(str, Enum):
+    done = "готово"
+    processing = "в обработке"
+    error = "ошибка"
+    notdecoded = "нераспознано"
+
 ###############
 class TaskCreate(BaseModel):
     uuid: str
     filename: str
+    size: int
     max_cnt_elems: int = Field(default=..., ge=1)
     user_uuid: str
-    status: str
+    status: Status
     processing_path: str
-    # error_text: str | None = None
+    error_text: str | None = None
     start_time: time
-    # finish_time: time | None = None
+    finish_time: time | None = None
 
 class TaskUpdate(BaseModel):
-    status: str
+    status: Status
+    processing_path: str | None = None
     error_text: str | None = None
     finish_time: time
 
