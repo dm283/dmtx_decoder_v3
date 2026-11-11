@@ -189,7 +189,8 @@ onMounted( () => {
       <div class=" float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
       <div class=" float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
       <div v-if="sfile.status!='готово'" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
-      <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) v-if="sfile.status=='готово'" class="ml-5" />
+      <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) :task_uuid="sfile.uuid"
+        v-if="sfile.status=='готово'" class="ml-5" />
       <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
     </div>
 

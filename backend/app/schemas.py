@@ -17,6 +17,11 @@ class FileData(BaseModel):
     file_path: str
     file_name: str
 
+class FileDBData(BaseModel):
+    file_type: str
+    task_uuid: str
+
+
 
 ################
 class Status(str, Enum):
