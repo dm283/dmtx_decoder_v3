@@ -1,5 +1,8 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ConfigIniParser } from "config-ini-parser"; let parser = new ConfigIniParser();
+import data from "../../backend/config.ini?raw"; parser.parse(data);
+var backendAddr = `${parser.get("main", "backend_ip_address")}:${parser.get("main", "backend_port")}`
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import 'primeicons/primeicons.css';
 import FormSendFile from './components/FormSendFile.vue'
@@ -26,14 +29,10 @@ const userInfo = ref()
 
 const initApp = async () => {
   //
-  console.log('init app')
   getUserInfo();
-  console.log('getuserinfo done', userInfo.value)
   if (!userInfo.value) { return }
   getUserTasks();
-  console.log('getusertasks done', sentFilesList.value)
   initWS(userInfo.value.uuid);
-  console.log('initws done')
   isAuthorized.value = true;
 }
 
@@ -46,10 +45,8 @@ const getUserInfo = async () => {
 const getUserTasks = async () => {
   //
   try {     
-    const response = await axios.get(`http://localhost:8000/user_tasks`, {headers: authHeader()});
-    console.log('loaded tasks =', response.data)
+    const response = await axios.get(`http://${backendAddr}/user_tasks`, {headers: authHeader()});
     sentFilesList.value = response.data;
-    console.log('sentFilesList =', sentFilesList.value[0])
   } catch (error) {
     // unauthorized response (obsolete token)
     if (error.response.status == 401 && error.response.data.detail == 'Could not validate credentials') {
@@ -64,10 +61,9 @@ const getUserTasks = async () => {
 
 
 const initWS = ( user_uuid ) => {
-  // console.log('auth ok - open websock')
-  console.log('inside initws =', user_uuid)
+  //
   // const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
-  const ws = new WebSocket(`ws://localhost:8000/ws/${user_uuid}`);
+  const ws = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
   // const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
   ws.onmessage = function(event) {
     // const message = event.data  // 

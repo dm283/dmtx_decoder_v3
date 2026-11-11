@@ -1,5 +1,8 @@
 <script setup>
-import {ref, reactive, computed, onMounted} from 'vue';
+import { ConfigIniParser } from "config-ini-parser"; let parser = new ConfigIniParser();
+import data from "../../../backend/config.ini?raw"; parser.parse(data);
+var backendAddr = `${parser.get("main", "backend_ip_address")}:${parser.get("main", "backend_port")}`
+import {ref} from 'vue';
 import axios from 'axios';
 
 const emit = defineEmits(['authOk'])
@@ -23,10 +26,10 @@ const authSubmit = async () => {
 
   try {
     const response_get_token = await axios.post(
-      `http://localhost:8000/auth/token`,
+      `http://${backendAddr}/auth/token`,
       formData, {headers: {'Content-Type': 'multipart/form-data'}});
     if (response_get_token.data.access_token) {
-      const response_get_user = await axios.get(`http://localhost:8000/user`, 
+      const response_get_user = await axios.get(`http://${backendAddr}/user`, 
         { headers: {Authorization: `Bearer ${response_get_token.data.access_token}`} })
       let uniteUserData = {
         'access_token': response_get_token.data.access_token,

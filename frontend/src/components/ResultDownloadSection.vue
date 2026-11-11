@@ -1,4 +1,7 @@
 <script setup>
+import { ConfigIniParser } from "config-ini-parser"; let parser = new ConfigIniParser();
+import data from "../../../backend/config.ini?raw"; parser.parse(data);
+var backendAddr = `${parser.get("main", "backend_ip_address")}:${parser.get("main", "backend_port")}`
 import axios from 'axios';
 
 const authHeader = () => {
@@ -25,7 +28,7 @@ async function downloadFileDB(file_type, task_uuid) {
   formData.append('file_type', file_type);
   formData.append('task_uuid', task_uuid);
 
-  let query = `http://localhost:8000/download_file_db/`
+  let query = `http://${backendAddr}/download_file_db/`
   const response = await axios.post(query, formData, {responseType: "blob", headers: authHeader()});
   const filename = decodeURI(response.headers["file-name"])
 
@@ -46,7 +49,7 @@ async function downloadFileDB(file_type, task_uuid) {
 //   formData.append('file_path', path);
 //   formData.append('file_name', file_name);
 
-//   let query = `http://localhost:8000/download_file/`
+//   let query = `http://${backendAddr}/download_file/`
 //   const response = await axios.post(query, formData, {responseType: "blob", headers: authHeader()});
 //   const filename = decodeURI(response.headers["file-name"])
 

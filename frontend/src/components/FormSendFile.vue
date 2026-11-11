@@ -1,6 +1,8 @@
 <script setup>
-// import router from '@/router';
-import {ref, reactive, computed, onMounted} from 'vue';
+import { ConfigIniParser } from "config-ini-parser"; let parser = new ConfigIniParser();
+import data from "../../../backend/config.ini?raw"; parser.parse(data);
+var backendAddr = `${parser.get("main", "backend_ip_address")}:${parser.get("main", "backend_port")}`
+import {ref} from 'vue';
 import axios from 'axios';
 import FileAttrs from '@/components/FileAttrs.vue'
 
@@ -30,7 +32,7 @@ const sendFile = async () => {
   formData.append('max_cnt_elems', max_cnt_elems.value);
   formData.append('user_uuid', props.user_uuid);
   try {
-    const response = await axios.post(`http://localhost:8000/upload_file/`, 
+    const response = await axios.post(`http://${backendAddr}/upload_file/`, 
       formData, {headers: {'Content-Type': 'multipart/form-data', Authorization: 'Bearer '+userAccessToken()}});
 
     emit('msgSent', response.data)
