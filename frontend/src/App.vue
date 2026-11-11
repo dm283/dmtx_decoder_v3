@@ -52,10 +52,12 @@ const getUserTasks = async () => {
     console.log('sentFilesList =', sentFilesList.value[0])
   } catch (error) {
     // unauthorized response (obsolete token)
-    if (error.status == 401) { 
-      console.error('unauthorized'); 
-      // toast.warning('Авторизуйтесь заново, токен устарел!') 
+    if (error.response.status == 401 && error.response.data.detail == 'Could not validate credentials') {
+      signOut()
     }
+    // if (error.status == 401 ) { 
+    //   console.error('unauthorized'); 
+    // }
     console.error('Error fetching', error);
   } 
 }
