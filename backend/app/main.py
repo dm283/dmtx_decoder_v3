@@ -1,6 +1,6 @@
 import os, json
 from datetime import datetime
-from fastapi import FastAPI, UploadFile, Depends, Form, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, UploadFile, Depends, Form, WebSocket, WebSocketDisconnect, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.exceptions import HTTPException
@@ -60,7 +60,6 @@ async def upload_file(current_user: Annotated[UserAuth, Depends(get_current_acti
                                    max_cnt_elems = data.max_cnt_elems, user_uuid=data.user_uuid)
     file_uuid = str(uuid4())
     start_time = datetime.now().time().strftime('%H:%M:%S')
-    # filesize = round(int(file.size)/1000, 1)
 
     background_tasks.add_task(run_reco_script, file_uuid=file_uuid,
             filename=income_doc.filename, filesize=file.size, income_pdf_file=income_doc.filecontent, 
@@ -82,6 +81,28 @@ def file_download(current_user: Annotated[UserAuth, Depends(get_current_active_u
                                 "Content-Disposition": f"attachment; filename*=utf-8''{quote(os.path.basename(filename))}"})
     return response
 
+
+# download file from db
+@app.post('/download_file_db/')
+def file_download_db(current_user: Annotated[UserAuth, Depends(get_current_active_user)], 
+                     data: Annotated[schemas.FileDBData, Form()], db: Session = Depends(get_db)):
+
+    task_uuid = data.task_uuid  # 822a349e-f54b-478d-969e-11b10d983da0
+    file_type = data.file_type
+    filename_dict = {
+        'res_csv_file': 'res_decoded_dmtx.csv',
+        'report_file': 'bot_report.txt',
+        'undecoded_pages_zip': 'undecoded_pages.zip'
+    }
+    filename = filename_dict[file_type]
+    db_item = db.query(models.Task).filter(models.Task.uuid == task_uuid).first()
+    if db_item is None: raise HTTPException(status_code=404, detail="Item not found")
+    filecontent = db_item.__getattribute__(file_type)
+    response = Response(content=filecontent,
+                        headers={"Access-Control-Expose-Headers": "Content-Disposition, File-Name",
+                            "File-Name": quote(os.path.basename(filename), encoding='utf-8'),
+                            "Content-Disposition": f"attachment; filename*=utf-8''{quote(os.path.basename(filename))}"})
+    return response
 
 
 ### websocket section

@@ -298,7 +298,7 @@ def run_reco_script(file_uuid: str, filename: str, filesize: float, income_pdf_f
             with open(report_file, 'rb') as f:
                 report_file_content = f.read()
         if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip'):
-            with open(report_file, 'rb') as f:
+            with open(f'{undecoded_pages_folder}/undecoded_pages.zip', 'rb') as f:
                 undecoded_pages_zip_content = f.read()
 
         item = schemas.TaskUpdate(
