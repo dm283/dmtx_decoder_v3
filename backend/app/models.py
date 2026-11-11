@@ -33,10 +33,10 @@ class Task(Base):
     start_time = Column(Time)
     finish_time = Column(Time, nullable=True, default=None)
 
-    # source_pdf_file
-    # res_csv_file
-    # report_file
-    # undecoded_pages_zip
+    source_pdf_file = Column(LargeBinary)
+    res_csv_file = Column(LargeBinary)
+    report_file = Column(LargeBinary)
+    undecoded_pages_zip = Column(LargeBinary)
 
     id = Column(Integer, primary_key=True)
     created_datetime = Column(DateTime)

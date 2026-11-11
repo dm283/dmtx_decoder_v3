@@ -26,7 +26,7 @@ class Status(str, Enum):
     notdecoded = "нераспознано"
 
 ###############
-class TaskCreate(BaseModel):
+class TaskBase(BaseModel):
     uuid: str
     filename: str
     size: int
@@ -38,13 +38,32 @@ class TaskCreate(BaseModel):
     start_time: time
     finish_time: time | None = None
 
+class TaskCreate(TaskBase):
+    source_pdf_file: bytes
+
+# class TaskCreate(BaseModel):
+#     uuid: str
+#     filename: str
+#     source_pdf_file: bytes
+#     size: int
+#     max_cnt_elems: int = Field(default=..., ge=1)
+#     user_uuid: str
+#     status: Status
+#     processing_path: str
+#     error_text: str | None = None
+#     start_time: time
+#     finish_time: time | None = None
+    
 class TaskUpdate(BaseModel):
     status: Status
     processing_path: str | None = None
     error_text: str | None = None
     finish_time: time
+    res_csv_file: bytes | None = None
+    report_file: bytes | None = None
+    undecoded_pages_zip: bytes | None = None
 
-class Task(TaskCreate):
+class Task(TaskBase):
     id: int
     created_datetime: datetime
 

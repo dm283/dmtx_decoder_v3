@@ -247,6 +247,7 @@ def run_reco_script(file_uuid: str, filename: str, filesize: float, income_pdf_f
         data = schemas.TaskCreate(
             uuid = file_uuid,
             filename = filename,
+            source_pdf_file = income_pdf_file, 
             size = filesize,
             max_cnt_elems = dmtx_cnt_per_page,
             user_uuid = user_uuid,
@@ -287,8 +288,24 @@ def run_reco_script(file_uuid: str, filename: str, filesize: float, income_pdf_f
         }
         msg_date = {'message': 'recognition done', 'uuid': file_uuid, 'processing_path': processing_path, 'user_uuid': user_uuid}
         send_websocket_msg(msg_date=msg_date)
-        
-        item = schemas.TaskUpdate(processing_path=json.dumps(processing_path), status='готово', 
+
+        # read result files byte content for save it into database
+        res_csv_file_content, report_file_content, undecoded_pages_zip_content = None, None, None
+        if os.path.exists(res_csv_file) and general_decode_list:
+            with open(res_csv_file, 'rb') as f:
+                res_csv_file_content = f.read()
+        if os.path.exists(report_file):
+            with open(report_file, 'rb') as f:
+                report_file_content = f.read()
+        if os.path.exists(f'{undecoded_pages_folder}/undecoded_pages.zip'):
+            with open(report_file, 'rb') as f:
+                undecoded_pages_zip_content = f.read()
+
+        item = schemas.TaskUpdate(
+            res_csv_file = res_csv_file_content or None,
+            report_file = report_file_content or None,
+            undecoded_pages_zip = undecoded_pages_zip_content or None,
+            processing_path=json.dumps(processing_path), status='готово', 
                                   finish_time=datetime.datetime.now().time().strftime('%H:%M:%S'))
         crud.update_task(item_uuid=file_uuid, item=item, db=db)
 

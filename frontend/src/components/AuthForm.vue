@@ -2,11 +2,6 @@
 import {ref, reactive, computed, onMounted} from 'vue';
 import axios from 'axios';
 
-const authHeader = () => {
-  let user = JSON.parse(localStorage.getItem('user')); 
-  if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
-}
-
 const emit = defineEmits(['authOk'])
 
 const login = ref('');
@@ -19,13 +14,6 @@ const vFocus = { mounted: (el) => { el.focus() } }
 const formLabelStyle = 'mx-1 block text-xs font-bold text-slate-400'
 const formInputStyle = 'border-b-2 border-blue-300 text-base w-full py-1 px-1 mb-2 hover:border-blue-400 focus:outline-none focus:border-blue-500 cursor-pointer'
 
-const setUserInfo = async () => {
-  //
-  const response = await axios.get(`http://localhost:8000/user`, {headers: authHeader()})
-  // console.log('get user =', response.data)
-  localStorage.setItem('userInfo', JSON.stringify(response.data));
-}
-
 
 const authSubmit = async () => {
   //
@@ -34,13 +22,20 @@ const authSubmit = async () => {
   formData.append('password', password.value);
 
   try {
-    const response = await axios.post(
+    const response_get_token = await axios.post(
       `http://localhost:8000/auth/token`,
       formData, {headers: {'Content-Type': 'multipart/form-data'}});
-    if (response.data.access_token) {
-      localStorage.setItem('user', JSON.stringify(response.data));
-      emit('authOk')
-      await setUserInfo();
+    if (response_get_token.data.access_token) {
+      const response_get_user = await axios.get(`http://localhost:8000/user`, 
+        { headers: {Authorization: `Bearer ${response_get_token.data.access_token}`} })
+      let uniteUserData = {
+        'access_token': response_get_token.data.access_token,
+        'login': response_get_user.data.login,
+        'role_id': response_get_user.data.role_id,
+        'uuid': response_get_user.data.uuid
+      }
+      localStorage.setItem('userInfo', JSON.stringify(uniteUserData));
+      emit('authOk');
     }
   } catch (error) {
     if (error.response) {
@@ -51,11 +46,9 @@ const authSubmit = async () => {
         authFormMessage.value = `${login.value} залогинен на другом компьютере` }
       else { 
         authFormMessage.value = 'Ошибка авторизации.'
-      }
-      
+      }  
     }
     
-    // isAuthorized.value = false;
   };
 }
 
@@ -82,7 +75,6 @@ const authSubmit = async () => {
         >
         ВХОД
         </button>
-        <!-- bg-green-500 text-white font-semibold rounded-full px-3 py-2 w-60 shadow-md hover:shadow-lg hover:bg-green-600 -->
       </div>
     </form>
     <div class="mb-5 text-red-500 text-center">
