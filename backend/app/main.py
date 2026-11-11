@@ -111,13 +111,49 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         self.active_connections_mapping: dict = {}
 
+        self.reversedict: dict = {}
+        self.active_conn_dict: dict = {}
+
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
+
+        # 2 feature only 1 connection for 1 login
+        if client_id in self.active_connections_mapping:
+            msg_text = {"message": "already logged in"}
+            msg_text = json.dumps(msg_text)
+            await self.send_personal_message(msg_text, websocket)
+            return
+
         self.active_connections.append(websocket)
         self.active_connections_mapping[client_id] = websocket
 
+        # try new feature
+        self.reversedict[websocket] = client_id
+        # if client_id not in self.active_conn_dict:
+        #     self.active_conn_dict[client_id] = []
+        # self.active_conn_dict[client_id].append(websocket)
+        # print('active_conn_dict after new conn=', self.active_conn_dict)
+        # print('active_connections_mapping after new conn=', self.active_connections_mapping)
+        # print('reversedict =', self.reversedict)
+
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        print('вебсокет отключился', websocket, str(websocket))
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+        # try new feature
+        # del self.active_connections_mapping[ self.reversedict[websocket] ]
+        # if websocket in self.active_conn_dict[ self.reversedict[websocket] ]:
+        #     self.active_conn_dict[ self.reversedict[websocket] ].remove(websocket)
+        if websocket in self.reversedict:
+            del self.active_connections_mapping[ self.reversedict[websocket] ]
+            del self.reversedict[websocket]
+        
+
+        # for i in self.active_connections_mapping:
+        #     if self.active_connections_mapping[i] == websocket:
+        #         del self.active_connections_mapping[i]
+        # print('active_connections after disconnet =', self.active_connections_mapping)
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
@@ -143,6 +179,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 msg_text = {"message": "recognition done", "finish_time": datetime.now().time().strftime('%H:%M:%S'), "uuid": data['uuid'], "processing_path": data['processing_path']}
                 msg_text = json.dumps(msg_text)
                 await manager.send_personal_message(msg_text, manager.active_connections_mapping[receiver])
+
+                # try new
+                # for w in manager.active_conn_dict[receiver]:
+                #     print('w =', w)
+                #     await manager.send_personal_message(msg_text, w)
 
             elif data['message'] == 'error':
                 receiver = data['user_uuid']

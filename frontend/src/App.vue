@@ -26,6 +26,7 @@ const fileForSend = ref('')
 const sentFilesList = ref([])
 const userInfo = ref()
 
+const wss = ref()
 
 const initApp = async () => {
   //
@@ -52,22 +53,26 @@ const getUserTasks = async () => {
     if (error.response.status == 401 && error.response.data.detail == 'Could not validate credentials') {
       signOut()
     }
-    // if (error.status == 401 ) { 
-    //   console.error('unauthorized'); 
-    // }
-    console.error('Error fetching', error);
+    else if (error.status == 401 ) { 
+      console.error('unauthorized');
+      signOut()
+    }
+    else { console.error('Error fetching', error); }
   } 
 }
 
 
 const initWS = ( user_uuid ) => {
   //
-  // const ws = new WebSocket(`ws://localhost:8000/ws/${userInfo.value.uuid}`);
-  const ws = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
-  // const ws = new WebSocket(`ws://localhost:8000/ws/frontend`);
-  ws.onmessage = function(event) {
+  // const ws = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
+  wss.value = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
+  // ws.onmessage = function(event) {
+  wss.value.onmessage = function(event) {
     // const message = event.data  // 
     const message = JSON.parse(event.data);
+    
+    if (message.message=='already logged in') { signOut() }
+
     // messages.value.push(message);
     if (message.message=='recognition done') {
       for (let sf in sentFilesList.value) {
@@ -133,6 +138,8 @@ const signOut = async () => {
   localStorage.removeItem('userInfo');
   isAuthorized.value = false;
   sentFilesList.value.length = 0;
+  // ws.close()
+  wss.value.close()
 };
 
 
@@ -189,7 +196,6 @@ onMounted( () => {
         v-if="sfile.status=='готово'" class="ml-5" />
       <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
     </div>
-
   </section>
 
   </div>
