@@ -58,14 +58,11 @@ const authSubmit = async () => {
         authFormMessage.value = 'Ошибка авторизации.'
       }  
     } else {
-      
       try { 
         await axios.get(`http://${backendAddr}/`) 
         authFormMessage.value = 'Ошибка авторизации.'  
       } catch { authFormMessage.value = 'Проблема с сервером' }
-      
     }
-    
   };
 }
 

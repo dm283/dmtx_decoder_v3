@@ -2,7 +2,7 @@
 import { ConfigIniParser } from "config-ini-parser"; let parser = new ConfigIniParser();
 import data from "../../backend/config.ini?raw"; parser.parse(data);
 var backendAddr = `${parser.get("main", "backend_ip_address")}:${parser.get("main", "backend_port")}`
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import axios from 'axios';
 import 'primeicons/primeicons.css';
 import FormSendFile from './components/FormSendFile.vue'
@@ -25,10 +25,11 @@ const file = ref('')
 const fileForSend = ref('')
 const sentFilesList = ref([])
 const userInfo = ref()
-const auth_form_message = ref('test')
+const auth_form_message = ref('')
 
 const wss = ref()
 const isInitialization = ref()
+const isDisconnected = ref(false)
 
 const initApp = async () => {
   //
@@ -40,6 +41,7 @@ const initApp = async () => {
     if (!userInfo.value) { return }
     getUserTasks();
     initWS(userInfo.value.uuid);
+    isDisconnected.value = false;
     isAuthorized.value = true;
   }
   catch (error) {
@@ -84,7 +86,7 @@ const initWS = ( user_uuid ) => {
   wss.value.onclose = () => { 
     errMessageText.value = 'Проблема с сервером'; 
     setTimeout(() => {
-      if (errMessageText.value = 'Проблема с сервером') { showErrMsg.value = true }
+      if (errMessageText.value = 'Проблема с сервером') { isDisconnected.value = true; showErrMsg.value = true }
     }, 1000)
   }
 
@@ -93,7 +95,7 @@ const initWS = ( user_uuid ) => {
     // const message = event.data  // 
     const message = JSON.parse(event.data);
     console.log('receive ws msg =', message)
-    
+
     if (message.message=='already logged in') { auth_form_message.value = 'Авторизован на другом компьютере'; signOut() }
 
     // messages.value.push(message);
@@ -133,11 +135,16 @@ const openSendForm = () => {
     showErrMsg.value = true; return 
   }
   if (fileForSend.value.type != 'application/pdf') { 
-    errMessageText.value == 'Не pdf файл.'; showErrMsg.value = true; return 
+    errMessageText.value = 'Не pdf файл.'; showErrMsg.value = true; return 
   }
   showFromSendFile.value = true
 }
 
+
+const openErrorForm = (msg) => {
+  //
+  errMessageText.value = msg; showErrMsg.value = true;
+}
 
 const sentFilesListAdd = async (sentFile) => {
   //sentFilesList.value.push(sentFile)
@@ -164,7 +171,6 @@ const signOut = async () => {
   localStorage.removeItem('userInfo');
   isAuthorized.value = false;
   sentFilesList.value.length = 0;
-  // ws.close()
   wss.value.close()
 };
 
@@ -182,7 +188,11 @@ onMounted( () => {
   </div>
 
 
-  <div v-if="isAuthorized">
+  <div v-if="isAuthorized && isDisconnected">
+    <div>Проблема с подключением к сервису</div>
+  </div>
+
+  <div v-if="isAuthorized && !isDisconnected">
 
   <header class="h-10 py-1.5 px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
@@ -203,7 +213,9 @@ onMounted( () => {
   </section>
 
   <div v-if="showFromSendFile" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
-    <FormSendFile @close-modal="showFromSendFile=false" @clear-msg-file="file.value=''" @msg-sent="sentFilesListAdd" 
+    <FormSendFile @close-modal="showFromSendFile=false" @clear-msg-file="file.value=''" @msg-sent="sentFilesListAdd"
+      @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()"
+      @error-event="openErrorForm"
       :file_for_send="fileForSend" :user_uuid="userInfo.uuid" />
   </div>
 
@@ -219,7 +231,9 @@ onMounted( () => {
       <div class=" float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
       <div v-if="sfile.status!='готово'" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
       <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) :task_uuid="sfile.uuid"
-        v-if="sfile.status=='готово'" class="ml-5" />
+        v-if="sfile.status=='готово'" class="ml-5" 
+        @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()" 
+        @error-event="openErrorForm" />
       <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
     </div>
   </section>

@@ -10,7 +10,7 @@ const userAccessToken = () => {
   let user = JSON.parse(localStorage.getItem('userInfo')); if (user && user.access_token) {return user.access_token} else {return ''}
 }
 
-const emit = defineEmits(['clearMsgFile', 'closeModal', 'msgSent'])
+const emit = defineEmits(['clearMsgFile', 'closeModal', 'msgSent', 'unauthEvent', 'errorEvent'])
 
 const props = defineProps({
   file_for_send: {
@@ -34,11 +34,12 @@ const sendFile = async () => {
   try {
     const response = await axios.post(`http://${backendAddr}/upload_file/`, 
       formData, {headers: {'Content-Type': 'multipart/form-data', Authorization: 'Bearer '+userAccessToken()}});
-
     emit('msgSent', response.data)
     emit('closeModal')
   } catch (error) {
     if (error == 'AxiosError: Network Error') { console.log('backend is silent')}
+    else if (error.status == 401) { emit('unauthEvent'); return }
+    else { emit('errorEvent', 'ошибка при загрузке файла'); return }
     console.error('Error uploading file', error);
     
   };

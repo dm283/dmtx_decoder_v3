@@ -9,6 +9,8 @@ const authHeader = () => {
   if (user && user.access_token) {return { Authorization: 'Bearer ' + user.access_token };} else {return {};}
 }
 
+const emit = defineEmits(['unauthEvent', 'errorEvent'])
+
 const props = defineProps({
   processing_path: {
     type: Object,
@@ -23,13 +25,19 @@ const props = defineProps({
 
 async function downloadFileDB(file_type, task_uuid) {
   // downloads file from db
-  console.log('file data =', file_type, task_uuid)
+  
   let formData = new FormData();
   formData.append('file_type', file_type);
   formData.append('task_uuid', task_uuid);
 
-  let query = `http://${backendAddr}/download_file_db/`
-  const response = await axios.post(query, formData, {responseType: "blob", headers: authHeader()});
+  try{
+    let query = `http://${backendAddr}/download_file_db/`
+    var response = await axios.post(query, formData, {responseType: "blob", headers: authHeader()});
+  } catch (error) {
+    console.log('download err =', error)
+    if (error.status == 401) { emit('unauthEvent'); return }
+    else { emit('errorEvent', 'ошибка при скачивании файла'); return }
+  }
   const filename = decodeURI(response.headers["file-name"])
 
   var url = window.URL.createObjectURL(new Blob([response.data]));
