@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session, aliased
 from app import crud
 from app.database import SessionLocal
+from .websock_functions import send_websocket_msg
 
 router = APIRouter()
 
@@ -108,7 +109,7 @@ async def get_current_active_user(current_user: Annotated[UserAuth, Depends(get_
     return current_user
 
 
-loged_users_list = []
+# loged_users_list = []
 
 @router.post("/token")
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
@@ -129,7 +130,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     #         headers={"WWW-Authenticate": "Bearer"},
     #     )
     
-    loged_users_list.append(form_data.username)
+    # loged_users_list.append(form_data.username)
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
