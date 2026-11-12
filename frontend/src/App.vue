@@ -188,8 +188,13 @@ onMounted( () => {
   </div>
 
 
-  <div v-if="isAuthorized && isDisconnected">
-    <div>Проблема с подключением к сервису</div>
+  <div v-if="isAuthorized && isDisconnected" class="w-fit m-auto mt-20">
+    <div class="mb-5 text-2xl font-semibold text-indigo-500">Проблема с подключением к сервису</div>
+    <ul class="list-disc ml-5">
+      <li>Попробуйте перезагрузить страницу (F5)</li>
+      <li>Проверьте подключение к сети Интернет</li>
+      <li>Свяжитесь с администратором сервиса</li>
+    </ul>
   </div>
 
   <div v-if="isAuthorized && !isDisconnected">

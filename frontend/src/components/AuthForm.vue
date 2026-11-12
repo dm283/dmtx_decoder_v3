@@ -16,7 +16,7 @@ const props = defineProps({
 const login = ref('');
 const password = ref('');
 const authFormMessage = ref(props.auth_form_message)
-// const authFormMessage = ref('')
+const isLoading = ref(false)
 
 // custom directive for input autofocus
 const vFocus = { mounted: (el) => { el.focus() } }
@@ -32,6 +32,7 @@ const authSubmit = async () => {
   formData.append('password', password.value);
 
   try {
+    isLoading.value = true;
     const response_get_token = await axios.post(
       `http://${backendAddr}/auth/token`,
       formData, {headers: {'Content-Type': 'multipart/form-data'}});
@@ -45,6 +46,7 @@ const authSubmit = async () => {
         'uuid': response_get_user.data.uuid
       }
       localStorage.setItem('userInfo', JSON.stringify(uniteUserData));
+      // isLoading.value = false;
       emit('authOk');
     }
   } catch (error) {
@@ -59,11 +61,13 @@ const authSubmit = async () => {
       }  
     } else {
       try { 
-        await axios.get(`http://${backendAddr}/`) 
+        isLoading.value = true;
+        await axios.get(`http://${backendAddr}/`);
+        // isLoading.value = false;
         authFormMessage.value = 'Ошибка авторизации.'  
       } catch { authFormMessage.value = 'Проблема с сервером' }
     }
-  };
+  } finally { isLoading.value = false; };
 }
 
 </script>
@@ -83,15 +87,16 @@ const authSubmit = async () => {
         <input type="password" v-model="password" id="password" name="password" :class=formInputStyle required />
       </div>
       <div class="mt-5 mb-6 text-center">
-        <button
-          class="text-slate-400 text-sm font-semibold border border-slate-400 rounded-lg w-32 h-9 hover:text-slate-500 hover:border-slate-500 cursor-pointer"
-          type="submit"
-        >
-        ВХОД
+        <button class="text-slate-400 text-sm font-semibold border border-slate-400 rounded-lg w-32 h-9 hover:text-slate-500 
+          hover:border-slate-500 cursor-pointer" type="submit" :disabled="isLoading">
+          <div v-if="!isLoading">ВХОД</div>
+          <div v-else class="animate-spin pt-0.5">
+            <i class="pi pi-spinner" style="font-size: 1.5rem"></i>
+          </div>
         </button>
       </div>
     </form>
-    <div class="mb-5 text-red-500 text-center">
+    <div class="mb-5 text-indigo-500 text-center">
       {{ authFormMessage }}
     </div>
   </div>
