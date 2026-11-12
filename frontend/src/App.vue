@@ -80,7 +80,6 @@ const getUserTasks = async () => {
 
 const initWS = ( user_uuid ) => {
   //
-  // const ws = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
   wss.value = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
   
   wss.value.onclose = () => { 
