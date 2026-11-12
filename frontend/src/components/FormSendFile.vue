@@ -38,7 +38,9 @@ const sendFile = async () => {
     emit('msgSent', response.data)
     emit('closeModal')
   } catch (error) {
+    if (error == 'AxiosError: Network Error') { console.log('backend is silent')}
     console.error('Error uploading file', error);
+    
   };
 }
 

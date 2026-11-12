@@ -7,9 +7,16 @@ import axios from 'axios';
 
 const emit = defineEmits(['authOk'])
 
+const props = defineProps({
+  auth_form_message: {
+    type: String
+  }
+});
+
 const login = ref('');
 const password = ref('');
-const authFormMessage = ref('')
+const authFormMessage = ref(props.auth_form_message)
+// const authFormMessage = ref('')
 
 // custom directive for input autofocus
 const vFocus = { mounted: (el) => { el.focus() } }
@@ -50,6 +57,13 @@ const authSubmit = async () => {
       else { 
         authFormMessage.value = 'Ошибка авторизации.'
       }  
+    } else {
+      
+      try { 
+        await axios.get(`http://${backendAddr}/`) 
+        authFormMessage.value = 'Ошибка авторизации.'  
+      } catch { authFormMessage.value = 'Проблема с сервером' }
+      
     }
     
   };

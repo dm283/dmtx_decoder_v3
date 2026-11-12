@@ -121,6 +121,7 @@ class ConnectionManager:
         if client_id in self.active_connections_mapping:
             msg_text = {"message": "already logged in"}
             msg_text = json.dumps(msg_text)
+            print(111, msg_text, websocket)
             await self.send_personal_message(msg_text, websocket)
             return
 
@@ -135,9 +136,11 @@ class ConnectionManager:
         # print('active_conn_dict after new conn=', self.active_conn_dict)
         # print('active_connections_mapping after new conn=', self.active_connections_mapping)
         # print('reversedict =', self.reversedict)
+        print(f'websocket  -  пользователь {client_id} подключился {websocket}')
 
     def disconnect(self, websocket: WebSocket):
-        print('вебсокет отключился', websocket, str(websocket))
+        print('вебсокет отключился', websocket)
+        #print(f'websocket  -  user {client_id} отключился {websocket}')
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 

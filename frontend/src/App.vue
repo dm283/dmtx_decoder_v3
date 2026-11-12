@@ -25,16 +25,30 @@ const file = ref('')
 const fileForSend = ref('')
 const sentFilesList = ref([])
 const userInfo = ref()
+const auth_form_message = ref('test')
 
 const wss = ref()
+const isInitialization = ref()
 
 const initApp = async () => {
   //
-  getUserInfo();
-  if (!userInfo.value) { return }
-  getUserTasks();
-  initWS(userInfo.value.uuid);
-  isAuthorized.value = true;
+  errMessageText.value = ''; showErrMsg.value = false
+
+  try {
+    isInitialization.value = true
+    getUserInfo();
+    if (!userInfo.value) { return }
+    getUserTasks();
+    initWS(userInfo.value.uuid);
+    isAuthorized.value = true;
+  }
+  catch (error) {
+    console.log('initApp error', error)
+    signOut()
+  }
+  finally {
+    isInitialization.value = false
+  }
 }
 
 
@@ -50,14 +64,14 @@ const getUserTasks = async () => {
     sentFilesList.value = response.data;
   } catch (error) {
     // unauthorized response (obsolete token)
-    if (error.response.status == 401 && error.response.data.detail == 'Could not validate credentials') {
+    if (error.response && error.response.status == 401 && error.response.data.detail == 'Could not validate credentials') {
       signOut()
     }
     else if (error.status == 401 ) { 
       console.error('unauthorized');
       signOut()
     }
-    else { console.error('Error fetching', error); }
+    else { console.error('Error fetching', error); signOut() }
   } 
 }
 
@@ -66,12 +80,21 @@ const initWS = ( user_uuid ) => {
   //
   // const ws = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
   wss.value = new WebSocket(`ws://${backendAddr}/ws/${user_uuid}`);
+  
+  wss.value.onclose = () => { 
+    errMessageText.value = 'Проблема с сервером'; 
+    setTimeout(() => {
+      if (errMessageText.value = 'Проблема с сервером') { showErrMsg.value = true }
+    }, 1000)
+  }
+
   // ws.onmessage = function(event) {
   wss.value.onmessage = function(event) {
     // const message = event.data  // 
     const message = JSON.parse(event.data);
+    console.log('receive ws msg =', message)
     
-    if (message.message=='already logged in') { signOut() }
+    if (message.message=='already logged in') { auth_form_message.value = 'Авторизован на другом компьютере'; signOut() }
 
     // messages.value.push(message);
     if (message.message=='recognition done') {
@@ -106,8 +129,11 @@ const pasteFile = async (event) => {
 
 
 const openSendForm = () => {
+  if (errMessageText.value == 'Проблема с сервером') {
+    showErrMsg.value = true; return 
+  }
   if (fileForSend.value.type != 'application/pdf') { 
-    errMessageText.value = 'Не pdf файл.'; showErrMsg.value = true; return 
+    errMessageText.value == 'Не pdf файл.'; showErrMsg.value = true; return 
   }
   showFromSendFile.value = true
 }
@@ -152,7 +178,7 @@ onMounted( () => {
 <template>
 
   <div v-if="!isAuthorized" class="">
-    <AuthForm @auth-ok="initApp()"/>
+    <AuthForm :auth_form_message="auth_form_message" @auth-ok="initApp()"/>
   </div>
 
 
