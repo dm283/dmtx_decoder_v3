@@ -79,6 +79,26 @@ def get_user_by_uuid(db: Session, uuid: str):
     return db.query(models.User).filter(models.User.uuid == uuid).first()
 
 
+def update_user(db: Session, item_uuid: str, item: schemas.UserUpdate, new_pwd: str, user_uuid: str):
+    # specifia update function for user
+    item_from_db =  db.query(models.User).filter(models.User.uuid == item_uuid).first()
+    if item_from_db is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    
+    for field, value in item.model_dump(exclude_unset=True).items():
+        setattr(item_from_db, field, value)
+    db.commit()
+
+    # password change
+    if new_pwd:
+        password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        hashed_password=password_context.hash(new_pwd)
+        setattr(item_from_db, 'hashed_password', hashed_password)
+        db.commit()
+
+    # logging_action(obj_type='user', schema=schemas.User, action='update', item_from_db=item_from_db, user_uuid=user_uuid, db=db)
+    return item_from_db
+
 
 #########################################################    USER FUNCTIONS
 
@@ -1469,25 +1489,7 @@ def get_user_by_uuid(db: Session, uuid: str):
 #     return item_from_db
 
 
-# def update_user(db: Session, item_uuid: str, item: schemas.UserUpdate, new_pwd: str, user_uuid: str):
-#     # specifia update function for user
-#     item_from_db =  db.query(models.User).filter(models.User.uuid == item_uuid).first()
-#     if item_from_db is None:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    
-#     for field, value in item.model_dump(exclude_unset=True).items():
-#         setattr(item_from_db, field, value)
-#     db.commit()
 
-#     # password change
-#     if new_pwd:
-#         password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-#         hashed_password=password_context.hash(new_pwd)
-#         setattr(item_from_db, 'hashed_password', hashed_password)
-#         db.commit()
-
-#     logging_action(obj_type='user', schema=schemas.User, action='update', item_from_db=item_from_db, user_uuid=user_uuid, db=db)
-#     return item_from_db
 
 
 # def car_exit(db: Session, exitcarpass_uuid: str, exit_data: schemas.CarExitData, user_uuid: str):
