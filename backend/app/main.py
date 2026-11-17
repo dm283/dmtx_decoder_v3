@@ -210,7 +210,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 @app.get('/user_tasks/', response_model=list[schemas.Task])
 def read_tasks(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
-                   skip: int = 0, limit: int = 5, db: Session = Depends(get_db)):
+                   skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     common_functions.check_endpoint_role_access(url='user_tasks', type='get', current_role_id=current_user.role_id)
     items = crud.get_user_tasks(user_uuid=current_user.uuid, db=db, skip=skip, limit=limit)
     return items

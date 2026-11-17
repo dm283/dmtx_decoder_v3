@@ -226,7 +226,7 @@ onMounted( () => {
     <FormErrMsg @close-modal="showErrMsg=false" :errMessageText="errMessageText" />
   </div>
 
-  <section v-if="sentFilesList.length>0" class="m-auto mt-5 w-fit space-y-3">
+  <section v-if="sentFilesList.length>0" class="m-auto mt-5 mb-5 w-fit space-y-3">
     <div v-for="sfile in sentFilesList" class="w-[528px] h-17 p-2 border border-slate-200 rounded-md">
       <!-- <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="sfile.file" /></div> -->
       <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="{'filename':sfile.filename, 'size':sfile.size}" /></div>

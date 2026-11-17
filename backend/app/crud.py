@@ -36,10 +36,10 @@ def update_task(item_uuid: str, item: schemas.TaskUpdate, db: Session, ):
     return item_from_db
 
 
-def get_user_tasks(user_uuid: str, db: Session, skip: int = 0, limit: int = 100):
+def get_user_tasks(user_uuid: str, db: Session, skip: int = 0, limit: int = 10):
     #
     return db.query(models.Task).filter(models.Task.user_uuid==user_uuid).\
-        order_by(models.Task.created_datetime.desc()).all()
+        order_by(models.Task.created_datetime.desc()).limit(limit).all()
 
 
 def create_user(db: Session, user: schemas.UserCreate, user_uuid: str):
