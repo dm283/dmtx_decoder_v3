@@ -58,7 +58,6 @@ def get_password_hash(password):
 
 def get_user(username: str, db: Session):
     db_user = crud.get_user_by_login(db=db, login=username)
-    # db_user = crud.get_user_by_login(db=db, login=username)
     if db_user:
         return db_user
     
