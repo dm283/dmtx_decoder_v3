@@ -237,3 +237,14 @@ def read_user(current_user: Annotated[UserAuth, Depends(get_current_active_user)
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
+
+
+@app.put('/users/{item_uuid}', response_model=schemas.User)
+def update_user(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
+                         item_uuid: str, data: Annotated[schemas.UserCreate, Form()], db: Session = Depends(get_db)):
+    #
+    common_functions.check_endpoint_role_access(url='users', type='put', current_role_id=current_user.role_id)
+    updated_datetime = datetime.now()
+    data_none_values_redefined = common_functions.redefine_schema_values_to_none(data, schemas.UserCreate)
+    item = schemas.UserUpdate(**data_none_values_redefined.model_dump(), updated_datetime=updated_datetime)
+    return crud.update_user(db=db, item_uuid=item_uuid, item=item, new_pwd=data_none_values_redefined.password, user_uuid=current_user.uuid)
