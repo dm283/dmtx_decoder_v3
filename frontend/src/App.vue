@@ -33,11 +33,11 @@ const isDisconnected = ref(false)
 
 const initApp = async () => {
   //
-  errMessageText.value = ''; showErrMsg.value = false
+  auth_form_message.value = ''; errMessageText.value = ''; showErrMsg.value = false;
 
   try {
     isInitialization.value = true
-    getUserInfo();
+    getUserInfo();  
     if (!userInfo.value) { return }
     getUserTasks();
     initWS(userInfo.value.uuid);
@@ -181,7 +181,6 @@ onMounted( () => {
 </script>
 
 <template>
-
   <div v-if="!isAuthorized" class="">
     <AuthForm :auth_form_message="auth_form_message" @auth-ok="initApp()"/>
   </div>

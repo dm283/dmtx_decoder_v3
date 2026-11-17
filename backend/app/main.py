@@ -8,7 +8,6 @@ from typing import Annotated
 from uuid import uuid4
 from urllib.parse import quote
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
 from app import crud, models, schemas, auth, common_functions
 from .auth import UserAuth, get_current_active_user
@@ -207,25 +206,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         manager.disconnect(websocket)
         # await manager.broadcast(f"Client #{client_id} left the chat")
 
-
-
-#########################################################    SERVICE FUNCTIONS
-# def redefine_schema_values_to_none(data, schema_obj):
-#     # get data received from frontend and redefine values if value is any kind of none to None
-#     data_dict = data.dict()
-#     for k in data_dict:
-#         if data_dict[k] in ['null', 'undefined', '']:
-#             data_dict[k] = None
-#     return schema_obj(**data_dict)
-
-
-# def check_endpoint_role_access(url, type, current_role_id):
-#     #
-#     if 'ALL' in endpoint_allowed_roles_dict[type+url]:
-#         return
-
-#     if current_role_id not in endpoint_allowed_roles_dict[type+url]:
-#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Отсутствует доступ')
 
 
 @app.get('/user_tasks/', response_model=list[schemas.Task])
