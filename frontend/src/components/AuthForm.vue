@@ -62,7 +62,7 @@ const authSubmit = async () => {
     } else {
       try { 
         isLoading.value = true;
-        await axios.get(`http://${backendAddr}/`);
+        await axios.get(`http://${backendAddr}/check-backend-isalive/`);
         // isLoading.value = false;
         authFormMessage.value = 'Ошибка авторизации.'  
       } catch { authFormMessage.value = 'Проблема с сервером' }
@@ -90,7 +90,7 @@ const authSubmit = async () => {
         <button class="text-slate-400 text-sm font-semibold border border-slate-400 rounded-lg w-32 h-9 hover:text-slate-500 
           hover:border-slate-500 cursor-pointer" type="submit" :disabled="isLoading">
           <div v-if="!isLoading">ВХОД</div>
-          <div v-else class="animate-spin pt-0.5">
+          <div v-else class="animate-spin pt-0.5 text-black">
             <i class="pi pi-spinner" style="font-size: 1.5rem"></i>
           </div>
         </button>

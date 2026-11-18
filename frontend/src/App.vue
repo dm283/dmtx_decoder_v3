@@ -93,7 +93,7 @@ const initWS = ( user_uuid ) => {
   wss.value.onmessage = function(event) {
     // const message = event.data  // 
     const message = JSON.parse(event.data);
-    console.log('receive ws msg =', message)
+    // console.log('receive ws msg =', message)
 
     if (message.message=='already logged in') { auth_form_message.value = 'Авторизован на другом компьютере'; signOut() }
 

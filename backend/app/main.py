@@ -49,11 +49,20 @@ def get_db():
 def read_root():
     return {"backend_status": "working"}
 
+@app.get("/check-backend-isalive/")
+def read_root():
+    return {"backend_status": "working"}
+
 
 # upload file (document)
 @app.post("/upload_file/")
 async def upload_file(current_user: Annotated[UserAuth, Depends(get_current_active_user)],
     data: Annotated[schemas.IncomeDocReceived, Form()], file: UploadFile, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+
+    # print('file uploaded')
+    # from time import sleep
+    # sleep(10)
+    # print(ert)
     
     income_doc = schemas.IncomeDoc(filename = file.filename, filecontent = file.file.read(), 
                                    max_cnt_elems = data.max_cnt_elems, user_uuid=data.user_uuid)
