@@ -145,6 +145,11 @@ const openErrorForm = (msg) => {
   errMessageText.value = msg; showErrMsg.value = true;
 }
 
+const setBodyStyle = () => { 
+  // set background screen fixed (scroll unabled) when modal window open
+  if (showErrMsg.value || showFromSendFile.value) { return 'h-screen overflow-hidden' } 
+}
+
 const sentFilesListAdd = async (sentFile) => {
   //sentFilesList.value.push(sentFile)
   sentFilesList.value.unshift(sentFile)
@@ -195,7 +200,7 @@ onMounted( () => {
     </ul>
   </div>
 
-  <div v-if="isAuthorized && !isDisconnected">
+  <div v-if="isAuthorized && !isDisconnected" :class=setBodyStyle()>
 
   <header class="h-10 py-1.5 px-2 md:px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
@@ -205,7 +210,7 @@ onMounted( () => {
   </header>
 
   <!-- input file section -->
-  <section class="flex mx-auto md:w-fit mt-5 md:mt-20 p-1.5">
+  <section class="flex mx-auto md:w-fit mt-5 md:mt-10 p-1.5">
     <div class="mr-2">
       <label for="msg_add_file" class="cursor-pointer hover:text-slate-500" title="прикрепить файл"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
       <input class="hidden" type="file" ref="file" id="msg_add_file" name="msg_add_file" 
@@ -217,7 +222,8 @@ onMounted( () => {
   </section>
 
   <!-- modal formsendfile -->
-  <div v-if="showFromSendFile" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center px-1 md:px-0">
+  <div v-if="showFromSendFile" class="fixed absolute z-10 top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex 
+      items-center justify-center px-1 md:px-0">
     <FormSendFile @close-modal="showFromSendFile=false" @clear-msg-file="file.value=''" @msg-sent="sentFilesListAdd"
       @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()"
       @error-event="openErrorForm"
@@ -225,7 +231,8 @@ onMounted( () => {
   </div>
 
   <!-- modal error -->
-  <div v-if="showErrMsg" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center px-1 md:px-0">
+  <div v-if="showErrMsg" class="fixed absolute z-10 top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex 
+      items-center justify-center px-1 md:px-0">
     <FormErrMsg @close-modal="showErrMsg=false" :errMessageText="errMessageText" />
   </div>
 
