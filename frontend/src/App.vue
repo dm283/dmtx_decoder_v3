@@ -145,6 +145,11 @@ const openErrorForm = (msg) => {
   errMessageText.value = msg; showErrMsg.value = true;
 }
 
+const setBodyStyle = () => { 
+  // set background screen fixed (scroll unabled) when modal window open
+  if (showErrMsg.value || showFromSendFile.value) { return 'h-screen overflow-hidden' } 
+}
+
 const sentFilesListAdd = async (sentFile) => {
   //sentFilesList.value.push(sentFile)
   sentFilesList.value.unshift(sentFile)
@@ -195,16 +200,17 @@ onMounted( () => {
     </ul>
   </div>
 
-  <div v-if="isAuthorized && !isDisconnected">
+  <div v-if="isAuthorized && !isDisconnected" :class=setBodyStyle()>
 
-  <header class="h-10 py-1.5 px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
+  <header class="h-10 py-1.5 px-2 md:px-10 bg-blue-500 text-white text-lg bg-gradient-to-r from-blue-500 to-sky-500">
     datamatrix decoder v.3
-      <div class="float-right mx-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
+      <div class="float-right ml-3 mt-1 text-cyan-200 cursor-pointer hover:text-cyan-50" title='sign out'>
         <i class="pi pi-sign-out" style="font-size: 1.3rem" @click="signOut()"></i></div>
       <div class="float-right mt-0.5 mr-5 text-base">{{ userInfo.login }}</div>
   </header>
 
-  <section class="flex mx-auto w-fit mt-20 p-1.5">
+  <!-- input file section -->
+  <section class="flex mx-auto md:w-fit mt-5 md:mt-10 p-1.5">
     <div class="mr-2">
       <label for="msg_add_file" class="cursor-pointer hover:text-slate-500" title="прикрепить файл"><i class="pi pi-paperclip" style="font-size: 1.8rem"></i></label>
       <input class="hidden" type="file" ref="file" id="msg_add_file" name="msg_add_file" 
@@ -212,34 +218,73 @@ onMounted( () => {
     </div>
     <input type="text" id="msg_input_field" name="msg_input_field" placeholder="paste pdf file here..."
       @paste="pasteFile"
-      class="w-80 h-8 px-2 border-2 border-slate-400 rounded-lg" >
+      class="w-full md:w-80 h-8 px-2 border-2 border-slate-400 rounded-lg" >
   </section>
 
-  <div v-if="showFromSendFile" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
+  <!-- modal formsendfile -->
+  <div v-if="showFromSendFile" class="fixed absolute z-10 top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex 
+      items-center justify-center px-1 md:px-0">
     <FormSendFile @close-modal="showFromSendFile=false" @clear-msg-file="file.value=''" @msg-sent="sentFilesListAdd"
       @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()"
       @error-event="openErrorForm"
       :file_for_send="fileForSend" :user_uuid="userInfo.uuid" />
   </div>
 
-  <div v-if="showErrMsg" class="absolute z-10 top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
+  <!-- modal error -->
+  <div v-if="showErrMsg" class="fixed absolute z-10 top-0 left-0 w-full h-full bg-black/50 backdrop-blur-sm flex 
+      items-center justify-center px-1 md:px-0">
     <FormErrMsg @close-modal="showErrMsg=false" :errMessageText="errMessageText" />
   </div>
 
-  <section v-if="sentFilesList.length>0" class="m-auto mt-5 mb-5 w-fit space-y-3">
-    <div v-for="sfile in sentFilesList" class="w-[528px] h-17 p-2 border border-slate-200 rounded-md">
+  <!-- tasks section -->
+  <section v-if="sentFilesList.length>0" class="m-auto mt-5 mb-5 md:w-fit space-y-2 md:space-y-3">
+    <div v-for="sfile in sentFilesList" class="mx-1 md:mx-0 md:w-[528px] h-20 md:h-17 p-0.5 md:p-2 border border-slate-200 rounded-md">
       <!-- <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="sfile.file" /></div> -->
-      <div class="float-left w-60 overflow-hidden mr-5"><FileAttrs :file_data="{'filename':sfile.filename, 'size':sfile.size}" /></div>
-      <div class=" float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
-      <div class=" float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+      <div class=" float-left w-3/5 md:w-60 overflow-hidden mr-5 mt-3 md:mt-0 ml-0.5 md:ml-0">
+        <FileAttrs :file_data="{'filename':sfile.filename, 'size':sfile.size}" class=""/>
+
+      </div>
+      
+      <div class="hidden md:block float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+      <div class="hidden md:block float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+      
+        <div class="md:hidden mt-2 flex space-x-1">
+          <div class=" w-12 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+          <div class=" w-12 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+        </div>
+
+      <div v-if="sfile.status!='готово'" class="" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
+      <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) :task_uuid="sfile.uuid"
+        v-if="sfile.status=='готово'" class="ml-5" 
+        @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()" 
+        @error-event="openErrorForm" />
+
+      <!-- <div class="border inline-block md:hidden">
+        <div class="inline-block w-12 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+        <div class="inline-block w-12 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+      </div> -->
+      <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
+    </div>
+  </section>
+
+
+    <!-- pre-mobile-upgrade-version -->
+    <!-- <section v-if="sentFilesList.length>0" class="m-auto mt-5 mb-5 w-fit space-y-1 md:space-y-3">
+    <div v-for="sfile in sentFilesList" class="mx-1 md:mx-0 md:w-[528px] h-17 p-0.5 md:p-2 border border-slate-200 rounded-md">
+      
+      <div class="border float-left w-3/5 md:w-60 overflow-hidden mr-5"><FileAttrs :file_data="{'filename':sfile.filename, 'size':sfile.size}" /></div>
+      
+      <div class="float-left w-12 mt-4 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+      <div class="float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+      
       <div v-if="sfile.status!='готово'" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
       <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) :task_uuid="sfile.uuid"
         v-if="sfile.status=='готово'" class="ml-5" 
         @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()" 
         @error-event="openErrorForm" />
-      <!-- <ResultDownloadSection :processing_path='sfile.processing_path' v-if="sfile.status=='done'" class="ml-5" /> -->
+      
     </div>
-  </section>
+  </section> -->
 
   </div>
 </template>
