@@ -72,7 +72,6 @@ async function downloadFileDB(file_type, task_uuid) {
 // }
 
 const iconStyle = 'float-left rounded-lg hover:opacity-70 text-white w-8 h-8 text-center mt-2 pt-[1.5px] cursor-pointer'
-// const iconStyle = 'float-left rounded-lg hover:opacity-70 text-white w-8 h-8 text-center mt-2 pt-1.5 cursor-pointer'
 
 </script>
 

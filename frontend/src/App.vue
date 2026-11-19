@@ -249,13 +249,13 @@ onMounted( () => {
       <div class="hidden md:block float-left w-12 mt-4 mx-5 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
       
         <div class="md:hidden mt-2 flex space-x-1">
-          <div class=" w-12 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
-          <div class=" w-12 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
+          <div class="w-12 text-xs font-semibold text-slate-500">{{ sfile.start_time }}</div>
+          <div class="w-12 text-xs font-semibold text-center text-slate-500">{{ sfile.finish_time || '-'}}</div>
         </div>
 
       <div v-if="sfile.status!='готово'" class="" :class=setStatusStyle(sfile.status)>{{ sfile.status }}</div>
       <ResultDownloadSection :processing_path=processing_path_to_obj(sfile.processing_path) :task_uuid="sfile.uuid"
-        v-if="sfile.status=='готово'" class="ml-5" 
+        v-if="sfile.status=='готово'" class="ml-5 flex" 
         @unauth-event="auth_form_message='время токена истекло, авторизуйтесь'; signOut()" 
         @error-event="openErrorForm" />
 
